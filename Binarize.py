@@ -15,8 +15,11 @@ class InteractiveBinarization():
     def dummy(self,x=1):
         pass
 
-    def binarize(self):
-        cv2.namedWindow('Tracking Window')
+    def binarize(self,window_width=350,window_height=350):
+        
+        cv2.namedWindow('Tracking Window',cv2.WINDOW_FULLSCREEN)
+        cv2.resizeWindow('Tracking Window', window_width, window_height)
+        
         cv2.createTrackbar('kernel','Tracking Window',3,513,self.dummy) # gauss kernal size
         cv2.createTrackbar('x_sigma','Tracking Window',0,100,self.dummy) # gauss X sigma
         cv2.createTrackbar('y_sigma','Tracking Window',0,100,self.dummy) # gauss Y sigma
@@ -29,7 +32,7 @@ class InteractiveBinarization():
         cv2.createTrackbar('angle','Tracking Window',0,360,self.dummy) # rotation angle
 
         QUIT = False
-        put_text = True
+        put_text = False
         read_image = True
         counter = 0
         while not QUIT:
