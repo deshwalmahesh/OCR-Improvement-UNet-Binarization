@@ -3,3 +3,5 @@ Image Deskewing, Projection Profile, Binarization using thresholding, Noise remo
 
 
 Uses OpenCv, Scikit-Image, Keras for U-Net and all.
+
+Also has Image colorfulness and Blurness finder in an image.
