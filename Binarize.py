@@ -33,17 +33,14 @@ class InteractiveBinarization():
         '''
         cv2.namedWindow('Tracking Window',cv2.WINDOW_FULLSCREEN)
         cv2.resizeWindow('Tracking Window', window_width, window_height)
-        
-        cv2.createTrackbar('kernel','Tracking Window',3,513,self.dummy) # gauss kernal size
+        cv2.createTrackbar('gauss_k','Tracking Window',2,513,self.dummy) # gauss kernal size
         cv2.createTrackbar('x_sigma','Tracking Window',0,100,self.dummy) # gauss X sigma
         cv2.createTrackbar('y_sigma','Tracking Window',0,100,self.dummy) # gauss Y sigma
-
-        cv2.createTrackbar('amount1','Tracking Window',0,7,self.dummy) # sharpen amount number
-        cv2.createTrackbar('amount2','Tracking Window',1,100,self.dummy) # sharpen amount decimal
-        cv2.createTrackbar('radius1','Tracking Window',0,7,self.dummy) # sharpen radius
-        cv2.createTrackbar('radius2','Tracking Window',1,100,self.dummy) #  sharpen radius decimal
-
+        cv2.createTrackbar('radius','Tracking Window',1,100,self.dummy) # sharpen radius
+        cv2.createTrackbar('amount','Tracking Window',1,200,self.dummy) # sharpen amount number
         cv2.createTrackbar('angle','Tracking Window',0,360,self.dummy) # rotation angle
+        # cv2.createTrackbar('morph_k','Tracking Window',2,30,self.dummy) # Morph kernal size
+        # cv2.createTrackbar('method','Tracking Window',0,3,self.dummy) # Morphological methods. Just Testing
 
         
     def binarize(self,)->None:
@@ -51,6 +48,7 @@ class InteractiveBinarization():
         Method to binarize the Image based on the sliding values from the bars. It accepts Gauss Kernal, Sharpeen Amount, Sharpen Radius, Rotation Angle
         Press 'esc' or 'q' to quit, 's' to save the binarized image, 't' for printing the current bar values to image, 'p' for previous image and 'n' for next image
         '''
+        methods = [cv2.MORPH_ERODE,cv2.MORPH_DILATE,cv2.MORPH_OPEN,cv2.MORPH_CLOSE] # morphological methods
         QUIT = False
         put_text = False
         read_image = True
@@ -64,31 +62,30 @@ class InteractiveBinarization():
                 img = cv2.imread(self.path+img_name)
                 read_image = False
 
-            self.g_k = cv2.getTrackbarPos('kernel','Tracking Window')
+            self.g_k = cv2.getTrackbarPos('gauss_k','Tracking Window')
             if self.g_k % 2 == 0:
                 self.g_k+=1
 
             self.g_x_sigma = cv2.getTrackbarPos('x_sigma','Tracking Window')
             self.g_y_sigma = cv2.getTrackbarPos('y_sigma','Tracking Window')
-
-            self.s_a1 = cv2.getTrackbarPos('amount1','Tracking Window') # 1,2,3,4
-            self.s_a2 = cv2.getTrackbarPos('amount2','Tracking Window') # .01, ..... 0.99
-            self.s_r1 = cv2.getTrackbarPos('radius1','Tracking Window') # same as above
-            self.s_r2 = cv2.getTrackbarPos('radius2','Tracking Window')
-            self.s_a = round(self.s_a1 + self.s_a2/100,2) # 1.01.......... 7.99
-            self.s_r = round(self.s_r1 + self.s_r2/100,2) # same asa above
-
+            self.amount = cv2.getTrackbarPos('amount','Tracking Window') # 1,2,3,4
+            self.radius = cv2.getTrackbarPos('radius','Tracking Window') # same as above
+            self.amount = round(self.amount/10,2) # 0.1.......... 9.99
+            self.radius = round(self.radius/10,2) # same asa above
             self.angle = cv2.getTrackbarPos('angle','Tracking Window')
+            # self.morph_k = cv2.getTrackbarPos('morph_k','Tracking Window')
+            # self.method = cv2.getTrackbarPos('method','Tracking Window')
 
             gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
             smooth = cv2.GaussianBlur(gray, (self.g_k,self.g_k), self.g_x_sigma,sigmaY=self.g_y_sigma)
             division = cv2.divide(gray, smooth, scale=255)
-            sharp = filters.unsharp_mask(division, radius=self.s_r, amount=self.s_a, multichannel=False, preserve_range=False)
+
+
+            sharp = filters.unsharp_mask(division, radius=self.radius, amount=self.amount, multichannel=False, preserve_range=False)
             sharp = (255*sharp).clip(0,255).astype(np.uint8)
 
-            kernel = np.ones((5,5),np.uint8)
-            opening = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel)
-            closing = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
+            # morph_kernel = np.ones((self.morph_k,self.morph_k))
+            # sharp = cv2.morphologyEx(sharp, methods[self.method], morph_kernel)
 
             thresh = cv2.threshold(sharp, 0, 255, cv2.THRESH_OTSU )[1]
 
@@ -99,11 +96,10 @@ class InteractiveBinarization():
             thresh = cv2.warpAffine(thresh, M, (w, h), flags=cv2.INTER_CUBIC, borderMode = cv2.BORDER_CONSTANT, borderValue=255)
 
             if put_text:
-                text = f"g_k: {self.g_k} , g_x_sigma: {self.g_x_sigma} , g_y_sigma: {self.g_y_sigma} , s_a: {self.s_a} , s_r: {self.s_r} , angle: {self.angle}"
+                text = f"g_k: {self.g_k} , x_sigma: {self.g_x_sigma} , y_sigma: {self.g_y_sigma} , amt: {self.amount} , rad: {self.radius} , angle: {self.angle}"
                 cv2.putText(thresh,text,org=(30,30),fontFace=cv2.FONT_HERSHEY_SIMPLEX,fontScale=0.5,color=(0,128,0),thickness=1)
 
-            cv2.imshow(img_name, thresh)
-
+            cv2.imshow('Binary', thresh)
             key = cv2.waitKey(1) # show for 1 miliseconds. Because the loop is infinite, it'll be infinitely showing the results
             if key==27 or key == ord('q'): # Press escape / q  to close all windows
                 QUIT = True
@@ -120,13 +116,50 @@ class InteractiveBinarization():
                     read_image = True
                     counter += 1
                     cv2.destroyWindow('Tracking Window')
-                    cv2.destroyWindow(img_name)
 
             elif key == ord('p'):
                 if counter > 0: 
                     read_image = True
                     counter -= 1
                     cv2.destroyWindow('Tracking Window')
-                    cv2.destroyWindow(img_name)
 
         cv2.destroyAllWindows()
+
+
+def has_blur(image_path:str,thresh:float)->bool:
+    '''
+    Use Laplacian Variance to find if an image has blur or not. It is very critical to find the threshold and is vert data specific
+    args:
+        image_path: path of the image
+        thresh: threshold to find the find. If the Laplacian Variance has value Lower than that threshold, it has blur
+    '''
+    gray = cv2.imread(image_path,0)
+    lap_var = cv2.Laplacian(gray, cv2.CV_64F).var()
+    if lap_var < thresh:
+        return True
+    return False
+
+
+def image_colorfulness(image_path:str,thresh:float,alpha:float=0.5,beta:float=0.3)->bool:
+    '''
+    Find the image colorfulness. Idea given at PyimageSearch. Uses a threshold to find the colorfulness. threshold is critical and data dependent
+    We'll use it as a very basic spam classifier.
+    NOTE: It'll fail if the incoming question image is not from a B&W book and has colorful texts and diagrams
+    args:
+        image_path: Path of the image
+        thresh: Threshold of the colurfulness. We'll assume that images crossing this threshold are spams
+        alpha: floating number in computing the value of  yb  as  (alpha * (R + G) - B)
+        beta: number for computing the colorfulness as  (stdRoot + (beta * meanRoot))
+    '''
+    image = cv2.imread(image_path)
+    (B, G, R) = cv2.split(image.astype("float"))
+    rg = np.absolute(R - G) # difference between Red and Green Channel
+    yb = np.absolute(alpha * (R + G) - B) # yb = 0.5 * (R + G) - B
+    (rbMean, rbStd) = (np.mean(rg), np.std(rg)) # mean and std
+    (ybMean, ybStd) = (np.mean(yb), np.std(yb))
+    stdRoot = np.sqrt((rbStd ** 2) + (ybStd ** 2))
+    meanRoot = np.sqrt((rbMean ** 2) + (ybMean ** 2))
+    colorfulness = stdRoot + (beta * meanRoot)
+    if colorfulness > thresh:
+        return True
+    return False
