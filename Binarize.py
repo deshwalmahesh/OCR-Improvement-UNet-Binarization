@@ -46,7 +46,6 @@ class InteractiveBinarization():
         cv2.createTrackbar('angle','Tracking Window',0,360,self.dummy) # rotation angle
 
         
-
     def binarize(self,)->None:
         '''
         Method to binarize the Image based on the sliding values from the bars. It accepts Gauss Kernal, Sharpeen Amount, Sharpen Radius, Rotation Angle
@@ -56,10 +55,11 @@ class InteractiveBinarization():
         put_text = False
         read_image = True
         counter = 0
-        self.create_window()
 
         while not QUIT:
             if read_image:
+                self.create_window() # create a new trackbar window
+
                 img_name = self.images[counter]
                 img = cv2.imread(self.path+img_name)
                 read_image = False
@@ -120,13 +120,12 @@ class InteractiveBinarization():
                     read_image = True
                     counter += 1
                     cv2.destroyWindow('Tracking Window')
-                    self.create_window()
+
 
             elif key == ord('p'):
                 if counter > 0: 
                     read_image = True
                     counter -= 1
                     cv2.destroyWindow('Tracking Window')
-                    self.create_window()
 
         cv2.destroyAllWindows()
