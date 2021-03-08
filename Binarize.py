@@ -102,7 +102,7 @@ class InteractiveBinarization():
                 text = f"g_k: {self.g_k} , g_x_sigma: {self.g_x_sigma} , g_y_sigma: {self.g_y_sigma} , s_a: {self.s_a} , s_r: {self.s_r} , angle: {self.angle}"
                 cv2.putText(thresh,text,org=(30,30),fontFace=cv2.FONT_HERSHEY_SIMPLEX,fontScale=0.5,color=(0,128,0),thickness=1)
 
-            cv2.imshow('Image', thresh)
+            cv2.imshow(img_name, thresh)
 
             key = cv2.waitKey(1) # show for 1 miliseconds. Because the loop is infinite, it'll be infinitely showing the results
             if key==27 or key == ord('q'): # Press escape / q  to close all windows
@@ -120,12 +120,13 @@ class InteractiveBinarization():
                     read_image = True
                     counter += 1
                     cv2.destroyWindow('Tracking Window')
-
+                    cv2.destroyWindow(img_name)
 
             elif key == ord('p'):
                 if counter > 0: 
                     read_image = True
                     counter -= 1
                     cv2.destroyWindow('Tracking Window')
+                    cv2.destroyWindow(img_name)
 
         cv2.destroyAllWindows()
