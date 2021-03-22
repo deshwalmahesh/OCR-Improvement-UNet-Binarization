@@ -3,6 +3,7 @@ import cv2
 import skimage.filters as filters
 from os import listdir
 from os.path import isfile, join
+import random
 
 
 class InteractiveBinarization():
@@ -199,3 +200,78 @@ def add_blur(img:[str,np.ndarray],kernel_size:int=23,kind:[str,int]='motion_h')-
     elif kind == 'gauss': return cv2.GaussianBlur(img, (kernel_size,kernel_size),0)  
     
     elif kind == 'median': return cv2.medianBlur(img,kernel_size) 
+
+
+class AddNoise():
+    def pepper(self,img):
+        assert img.shape != 2, 'Image should be Grayscale for Pepper Noise'
+        row, col = img.shape
+        number_of_pixels = random.randint(333 , 10000) 
+        for i in range(number_of_pixels): 
+            y_coord=random.randint(0, row - 1) 
+            x_coord=random.randint(0, col - 1) 
+            img[y_coord][x_coord] = 0 # # Color that pixel to black
+        return img 
+
+    
+    def salt(self,img):
+        assert img.shape != 2, 'Image should be Grayscale for Salt Noise'
+        row, col = img.shape
+        number_of_pixels = random.randint(333 , 10000)   # Randomly pick some pixels in the image for coloring them white 
+        for i in range(number_of_pixels): 
+            y_coord=random.randint(0, row - 1) # Pick a random y coordinate 
+            x_coord=random.randint(0, col - 1) # Pick a random x coordinate 
+            img[y_coord][x_coord] = 255  # Color that pixel to white 
+        return img
+    
+    
+    def gauss(self,img):
+        gauss = np.random.normal(0,1,img.size)
+        gauss = gauss.reshape(img.shape[0],img.shape[1],img.shape[2]).astype('uint8')
+        return cv2.add(img,gauss)
+    
+    
+    def speckle(self,img): # Multiplicative Noise
+        gauss = np.random.normal(0,1,img.size)
+        gauss = gauss.reshape(img.shape[0],img.shape[1],img.shape[2]).astype('uint8')
+        return img + img * gauss
+    
+    
+    def add(self,img:[str,np.ndarray],noise_type:[str,int])->np.ndarray:
+        '''
+        Add Noise to the given input Image
+        args:
+            image: Input Image or path
+            noise_typ: Type of Noise to add. Can be from one of ['random','gauss','salt','pepper','salt_pepper','speckle','poisson'] or the index of this list
+            s_p_val: Number of pixels to change to randomly to white or black in Salt & Pepper (s&p) 
+        '''
+        noises = ['random','gauss','salt','pepper','salt_pepper','speckle','poisson']
+        
+        if isinstance(image,str):
+            img = cv2.imread(image)
+
+        if isinstance(noise_type,int):
+            assert(noise_type < len(noises)), "Pass a valid number or string for noise_type"
+            noise_type = noises[noise_type]
+            
+        assert noise_type in noises, "noise_type must be a valid noise type given in docstring"
+            
+        if noise_type == 'gauss':
+            return self.gauss(img)
+        
+        elif noise_type == "salt": # Salt Noise. convert random pixels to white
+            return self.salt(img)
+
+        elif noise_type == 'pepper': # make random pixels as black
+            return selt.pepper(img)
+
+        elif noise_type == 'salt_pepper': # do both salt and pepper
+            return self.pepper(self.salt(img))
+
+        elif noise_type == "poisson":
+            assert False, "Need implementation in OpenCV"
+            return self.poisson(img)
+        
+        elif noise_type == "speckle":
+            return self.speckle(img)
+            
