@@ -163,3 +163,39 @@ def image_colorfulness(image_path:str,thresh:float,alpha:float=0.5,beta:float=0.
     if colorfulness > thresh:
         return True
     return False
+
+
+def add_blur(img:[str,np.ndarray],kernel_size:int=23,kind:[str,int]='motion_h')->np.ndarray:
+    '''
+    Method to add different type of blurs to an image
+    args:
+        img: Path or the numpy array of image
+        kernel_size: Size of the kernel to convolve. Directly dependent on the strength of the blur
+        kind: Type of blurring to use. Can be any from ['horizontal_motion','motion_v','average','gauss','median']
+    '''
+    assert (kernel_size % 2 != 0), "kernel_size should be a positive odd number >= 3 " # required for most so declaring it common for all
+    
+    if isinstance(img,str):
+        img = cv2.imread(img)
+    
+    blurs = ['motion_h','motion_v','average','gauss','median']
+    if isinstance(kind,int):
+        kind = blurs[kind]
+        
+    if kind == 'motion_h':
+        kernel_h = np.zeros((kernel_size, kernel_size))  # horizontal kernel
+        kernel_h[int((kernel_size - 1)/2), :] = np.ones(kernel_size) 
+        kernel_h /= kernel_size 
+        return cv2.filter2D(img, -1, kernel_h) 
+ 
+    elif kind == 'motion_v':
+        kernel_v = np.zeros((kernel_size, kernel_size)) # vertical kernel
+        kernel_v[:, int((kernel_size - 1)/2)] = np.ones(kernel_size) 
+        kernel_v /= kernel_size  # Normalize. 
+        return cv2.filter2D(img, -1, kernel_v)
+    
+    elif kind == 'average': return cv2.blur(img,(kernel_size,kernel_size)) # Works like PIL BoxBlur
+   
+    elif kind == 'gauss': return cv2.GaussianBlur(img, (kernel_size,kernel_size),0)  
+    
+    elif kind == 'median': return cv2.medianBlur(img,kernel_size) 
