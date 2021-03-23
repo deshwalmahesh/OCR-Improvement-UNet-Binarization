@@ -274,4 +274,34 @@ class AddNoise():
         
         elif noise_type == "speckle":
             return self.speckle(img)
+
+
+def has_blur_fft(image:[np.ndarray,str], size=60, thresh=10,):
+    '''
+    Detect Blurs based of Fast Fourier Transformation
+    args:
+        image: Image path or array
+        size: Radius around the centerpoint of the image for which we will zero out the FFT shift
+        thresh: Threshold for determining if the image is blurry or not
+    '''
+    if isinstance(image,str): # If it is a string, Open the image using function
+            image = cv2.imread(image) # read image
+     
+    if len(image.shape) !=2: # If it is not Grayscale Image then convert
+        image = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
+        
+    (h, w) = image.shape
+    (cX, cY) = (int(w / 2.0), int(h / 2.0)) #center of image
+    
+    fft = np.fft.fft2(image) # Find FFT of the Image
+    fftShift = np.fft.fftshift(fft) # Shift the 0 frequency elements (Top left elements) to the center
+    
+    fftShift[cY - size:cY + size, cX - size:cX + size] = 0 # make the center elemet as Zero which are low frequency components
+    fftShift = np.fft.ifftshift(fftShift) # perform first inverse FFT so that the centeer goes to Top left again 
+    recon = np.fft.ifft2(fftShift) # Reconstruct the image by applying second Inverse FFT
+    
+    magnitude = 20 * np.log(np.abs(recon))
+    mean = np.mean(magnitude)
+    return mean <= thresh # If mean is less than equal to threshold, return True (has_blur)
+
             
