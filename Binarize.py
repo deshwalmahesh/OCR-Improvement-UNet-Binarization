@@ -127,20 +127,6 @@ class InteractiveBinarization():
         cv2.destroyAllWindows()
 
 
-def has_blur(image_path:str,thresh:float)->bool:
-    '''
-    Use Laplacian Variance to find if an image has blur or not. It is very critical to find the threshold and is vert data specific
-    args:
-        image_path: path of the image
-        thresh: threshold to find the find. If the Laplacian Variance has value Lower than that threshold, it has blur
-    '''
-    gray = cv2.imread(image_path,0)
-    lap_var = cv2.Laplacian(gray, cv2.CV_64F).var()
-    if lap_var < thresh:
-        return True
-    return False
-
-
 def image_colorfulness(image_path:str,thresh:float,alpha:float=0.5,beta:float=0.3)->bool:
     '''
     Find the image colorfulness. Idea given at PyimageSearch. Uses a threshold to find the colorfulness. threshold is critical and data dependent
@@ -166,40 +152,17 @@ def image_colorfulness(image_path:str,thresh:float,alpha:float=0.5,beta:float=0.
     return False
 
 
-def add_blur(img:[str,np.ndarray],kernel_size:int=23,kind:[str,int]='motion_h')->np.ndarray:
+def image_colorfulness_perc(img:[str,np.ndarray]):
     '''
-    Method to add different type of blurs to an image
-    args:
-        img: Path or the numpy array of image
-        kernel_size: Size of the kernel to convolve. Directly dependent on the strength of the blur
-        kind: Type of blurring to use. Can be any from ['horizontal_motion','motion_v','average','gauss','median']
+    Returns the % of colored pixels in an image. Can be used with a threshold to define which images are totally SPAM or which have useful text
     '''
-    assert (kernel_size % 2 != 0), "kernel_size should be a positive odd number >= 3 " # required for most so declaring it common for all
-    
     if isinstance(img,str):
         img = cv2.imread(img)
-    
-    blurs = ['motion_h','motion_v','average','gauss','median']
-    if isinstance(kind,int):
-        kind = blurs[kind]
-        
-    if kind == 'motion_h':
-        kernel_h = np.zeros((kernel_size, kernel_size))  # horizontal kernel
-        kernel_h[int((kernel_size - 1)/2), :] = np.ones(kernel_size) 
-        kernel_h /= kernel_size 
-        return cv2.filter2D(img, -1, kernel_h) 
- 
-    elif kind == 'motion_v':
-        kernel_v = np.zeros((kernel_size, kernel_size)) # vertical kernel
-        kernel_v[:, int((kernel_size - 1)/2)] = np.ones(kernel_size) 
-        kernel_v /= kernel_size  # Normalize. 
-        return cv2.filter2D(img, -1, kernel_v)
-    
-    elif kind == 'average': return cv2.blur(img,(kernel_size,kernel_size)) # Works like PIL BoxBlur
-   
-    elif kind == 'gauss': return cv2.GaussianBlur(img, (kernel_size,kernel_size),0)  
-    
-    elif kind == 'median': return cv2.medianBlur(img,kernel_size) 
+
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV) # convert to hsv-space 
+    h,s,v = cv2.split(hsv) #  split the channels 
+    th, threshed = cv2.threshold(s, 100, 255, cv2.THRESH_OTSU|cv2.THRESH_BINARY) # threshold the S (Saturation) channel
+    return threshed.mean()*100 # % of image pixels which are Colorful 
 
 
 class AddNoise():
@@ -274,6 +237,56 @@ class AddNoise():
         
         elif noise_type == "speckle":
             return self.speckle(img)
+
+
+def add_blur(img:[str,np.ndarray],kernel_size:int=23,kind:[str,int]='motion_h')->np.ndarray:
+    '''
+    Method to add different type of blurs to an image
+    args:
+        img: Path or the numpy array of image
+        kernel_size: Size of the kernel to convolve. Directly dependent on the strength of the blur
+        kind: Type of blurring to use. Can be any from ['horizontal_motion','motion_v','average','gauss','median']
+    '''
+    assert (kernel_size % 2 != 0), "kernel_size should be a positive odd number >= 3 " # required for most so declaring it common for all
+    
+    if isinstance(img,str):
+        img = cv2.imread(img)
+    
+    blurs = ['motion_h','motion_v','average','gauss','median']
+    if isinstance(kind,int):
+        kind = blurs[kind]
+        
+    if kind == 'motion_h':
+        kernel_h = np.zeros((kernel_size, kernel_size))  # horizontal kernel
+        kernel_h[int((kernel_size - 1)/2), :] = np.ones(kernel_size) 
+        kernel_h /= kernel_size 
+        return cv2.filter2D(img, -1, kernel_h) 
+ 
+    elif kind == 'motion_v':
+        kernel_v = np.zeros((kernel_size, kernel_size)) # vertical kernel
+        kernel_v[:, int((kernel_size - 1)/2)] = np.ones(kernel_size) 
+        kernel_v /= kernel_size  # Normalize. 
+        return cv2.filter2D(img, -1, kernel_v)
+    
+    elif kind == 'average': return cv2.blur(img,(kernel_size,kernel_size)) # Works like PIL BoxBlur
+   
+    elif kind == 'gauss': return cv2.GaussianBlur(img, (kernel_size,kernel_size),0)  
+    
+    elif kind == 'median': return cv2.medianBlur(img,kernel_size) 
+
+
+def has_blur(image_path:str,thresh:float)->bool:
+    '''
+    Use Laplacian Variance to find if an image has blur or not. It is very critical to find the threshold and is vert data specific
+    args:
+        image_path: path of the image
+        thresh: threshold to find the find. If the Laplacian Variance has value Lower than that threshold, it has blur
+    '''
+    gray = cv2.imread(image_path,0)
+    lap_var = cv2.Laplacian(gray, cv2.CV_64F).var()
+    if lap_var < thresh:
+        return True
+    return False
 
 
 def has_blur_fft(image:[np.ndarray,str], size=60, thresh=10,):
