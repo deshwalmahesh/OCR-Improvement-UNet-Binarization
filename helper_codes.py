@@ -5,6 +5,10 @@ from os import listdir
 from os.path import isfile, join
 import random
 from scipy.ndimage import interpolation as inter
+from skimage import io
+from skimage.feature import canny
+from skimage.color import rgb2gray
+from skimage.transform import hough_line, hough_line_peaks
 
 
 class InteractiveBinarization():
@@ -474,7 +478,7 @@ def has_blur_wavelet(img, threshold):
     
     return Per, BlurExtent
 
-
+# https://github.com/kakul/Alyn/blob/master/alyn/skew_detect.py : For Hugh Transform based
 def correct_skew(image, delta=1, limit=5):
     '''
     Projection Profile Method for Skew Correction and Skew Angle Findings
@@ -503,4 +507,7 @@ def correct_skew(image, delta=1, limit=5):
     rotated = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_CUBIC, \
               borderMode=cv2.BORDER_REPLICATE)
 
-    return best_angle, rotated            
+    return best_angle, rotated  
+
+
+
